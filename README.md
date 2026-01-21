@@ -3,12 +3,28 @@
 This document provides details on all available endpoints for accessing live data.  
 All requests require an **API key** via the `X-API-Key` header.
 
+## What’s New
+
+Added support for incremental sync using a new `created_since` parameter on all endpoints (/contacts, /barcodes, /locations/villages, /beneficiaries).
+
+Use `created_since` to fetch only records created after a specific timestamp, avoiding repeated full dataset downloads.
+
+Combined with the existing `after_id` cursor, this ensures safe pagination even when multiple rows share the same timestamp (common due to batch imports).
+
+Responses now include a meta object containing `last_timestamp` and `last_cursor` to simplify resuming syncs.
+
+Example usage:
+
+```
+curl -X GET \
+  'https://insight.delagua.org/wp-json/vendor-api/v1/contacts?country=SL&created_since=2026-01-20%2012:00:00&after_id=4567&limit=500' \
+  -H 'X-API-Key: your_api_key_here'
+```
 
 ## Base URL
 
 ```
 https://insight.delagua.org/wp-json/vendor-api/v1/
-
 ```
 
 
@@ -228,3 +244,4 @@ curl -X GET \
 3. Responses include `next_cursor` and `has_more` for easy paging.
 4. Ensure `X-API-Key` header is included in every request.
 5. JSON structure is **consistent across countries**; only unused fields are `null`.
+
