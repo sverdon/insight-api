@@ -39,18 +39,24 @@ X-API-Key: <your_api_key>
 If the key is invalid or missing, the API will return **HTTP 401 Unauthorized**.
 
 
-## Pagination
+## Pagination & Incremental Sync
 
-Endpoints support **cursor-based pagination**:
+Endpoints support:
+- Cursor-based pagination via after_id
+- Incremental sync via created_since
 
-- `after_id` (optional): ID of the last record from the previous page (default: 0)
-- `limit` (optional): Maximum number of rows to return (default: 500, max: 1000)
+| Parameter       | Type   | Required | Description                                                                                                                      |
+| --------------- | ------ | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `after_id`      | int    | No       | ID of the last record from the previous page (default: 0)                                                                        |
+| `created_since` | string | No       | ISO-8601 timestamp. Only records **created after this timestamp** will be returned. Default: `1970-01-01 00:00:00` for full sync |
+| `limit`         | int    | No       | Max number of rows per request (default 500, max 1000)                                                                           |
+| `country`       | string | Yes      | Country code: `SL`, `RW`, or `GAM`                                                                                               |
 
-**Response fields**:
-
-- `next_cursor`: ID to use in `after_id` for the next page  
-- `has_more`: Boolean indicating if more records exist
-
+Response metadata:
+- meta.count – Number of rows returned
+- meta.has_more – Boolean, true if more rows are available
+- meta.last_timestamp – Timestamp of the last record returned
+- meta.last_cursor – ID of the last record returned (use as after_id for next request)
 
 
 # Endpoints
@@ -71,7 +77,7 @@ Endpoints support **cursor-based pagination**:
 
 ```bash
 curl -X GET \
-  'https://insight.delagua.org/wp-json/vendor-api/v1/contacts?country=SL&after_id=0&limit=100' \
+  'https://insight.delagua.org/wp-json/vendor-api/v1/contacts?country=SL&after_id=0&created_since=2026-01-20%2012:00:00&limit=100' \
   -H 'X-API-Key: your_api_key_here'
 ```
 
@@ -79,12 +85,16 @@ curl -X GET \
 
 ```json
 {
+  "meta": {
+    "count": 2,
+    "has_more": true,
+    "last_timestamp": "2026-01-20 12:10:00",
+    "last_cursor": 102
+  },
   "data": [
-    { "DAID": 101, "FullName": "John Doe", "RegionID": 5, "ProjectID": 3699 },
-    { "DAID": 102, "FullName": "Jane Smith", "RegionID": 5, "ProjectID": 3699 }
-  ],
-  "next_cursor": 102,
-  "has_more": true
+    { "DAID": 101, "FullName": "John Doe", "RegionID": 5, "ProjectID": 3699, "Timestamp": "2026-01-20 08:50:59" },
+    { "DAID": 102, "FullName": "Jane Smith", "RegionID": 5, "ProjectID": 3699, "Timestamp": "2026-01-20 08:50:59" }
+  ]
 }
 ```
 
@@ -95,17 +105,18 @@ curl -X GET \
 
 **Request Parameters:**
 
-| Parameter | Type   | Required | Description                      |
-| --------- | ------ | -------- | -------------------------------- |
-| country   | string | Yes      | Country code: `SL`, `RW`, `GAM`  |
-| after_id  | int    | No       | Last ID from previous page      |
-| limit     | int    | No       | Max rows to return (default 100) |
+| Parameter     | Type   | Required | Description                                |
+| ------------- | ------ | -------- | ------------------------------------------ |
+| country       | string | Yes      | Country code: `SL`, `RW`, `GAM`            |
+| after_id      | int    | No       | Last barcode ID from previous page         |
+| created_since | string | No       | Fetch records created after this timestamp |
+| limit         | int    | No       | Max rows to return (default 500)           |
 
 **Example Request:**
 
 ```bash
 curl -X GET \
-  'https://insight.delagua.org/wp-json/vendor-api/v1/barcodes?country=GAM&after_id=0&limit=100' \
+  'https://insight.delagua.org/wp-json/vendor-api/v1/barcodes?country=GAM&after_id=0&created_since=2026-01-20%2012:00:00&limit=100' \
   -H 'X-API-Key: your_api_key_here'
 ```
 
@@ -113,12 +124,16 @@ curl -X GET \
 
 ```json
 {
+  "meta": {
+    "count": 2,
+    "has_more": true,
+    "last_timestamp": "2026-01-20 12:12:00",
+    "last_cursor": 2
+  },
   "data": [
-    { "ID": "1", "Barcode": "BC12345", "Investor": "Investor A", "RegionName": "Western", "TID": 5001, "DestID": 12, "ProjectID": 3699 },
-    { "ID": "2", "Barcode": "BC12346", "Investor": "Investor B", "RegionName": "Northern", "TID": 5002, "DestID": 15, "ProjectID": 3699 }
-  ],
-  "next_cursor": 2,
-  "has_more": true
+    { "ID": 1, "Barcode": "BC12345", "Investor": "Investor A", "RegionName": "Western", "TID": 5001, "DestID": 12, "ProjectID": 3699, "Timestamp": "2026-01-20 08:50:59" },
+    { "ID": 2, "Barcode": "BC12346", "Investor": "Investor B", "RegionName": "Northern", "TID": 5002, "DestID": 15, "ProjectID": 3699, "Timestamp": "2026-01-20 08:50:59" }
+  ]
 }
 ```
 
@@ -129,17 +144,18 @@ curl -X GET \
 
 **Request Parameters:**
 
-| Parameter | Type   | Required | Description                       |
-| --------- | ------ | -------- | --------------------------------- |
-| country   | string | Yes      | Country code: `SL`, `RW`, `GAM`   |
-| after_id  | int    | No       | Last VillageID from previous page |
-| limit     | int    | No       | Max rows to return (default 50)   |
+| Parameter     | Type   | Required | Description                                |
+| ------------- | ------ | -------- | ------------------------------------------ |
+| country       | string | Yes      | Country code: `SL`, `RW`, `GAM`            |
+| after_id      | int    | No       | Last VillageID from previous page          |
+| created_since | string | No       | Fetch records created after this timestamp |
+| limit         | int    | No       | Max rows to return (default 50)            |
 
 **Example Request:**
 
 ```bash
 curl -X GET \
-  'https://insight.delagua.org/wp-json/vendor-api/v1/locations/villages?country=SL&after_id=0&limit=50' \
+  'https://insight.delagua.org/wp-json/vendor-api/v1/locations/villages?country=SL&after_id=0&created_since=2026-01-20%2012:00:00&limit=50' \
   -H 'X-API-Key: your_api_key_here'
 ```
 
@@ -147,6 +163,12 @@ curl -X GET \
 
 ```json
 {
+  "meta": {
+    "count": 1,
+    "has_more": true,
+    "last_timestamp": "2026-01-20 12:15:00",
+    "last_cursor": 1023
+  },
   "data": [
     {
       "VillageID": 1023,
@@ -157,11 +179,10 @@ curl -X GET \
       "Chiefdom": "Kandu Leema",
       "Sector": null,
       "Cell": null,
-      "Village": "Sample Village"
+      "Village": "Sample Village",
+      "Timestamp": "2025-01-24 09:31:01"
     }
-  ],
-  "next_cursor": 1023,
-  "has_more": true
+  ]
 }
 ```
 
@@ -174,17 +195,18 @@ curl -X GET \
 
 **Request Parameters:**
 
-| Parameter | Type   | Required | Description                       |
-| --------- | ------ | -------- | --------------------------------- |
-| country   | string | Yes      | Country code: `SL`, `RW`, `GAM`   |
-| after_id  | int    | No       | Last HHID from previous page |
-| limit     | int    | No       | Max rows to return (default 500)  |
+| Parameter     | Type   | Required | Description                                |
+| ------------- | ------ | -------- | ------------------------------------------ |
+| country       | string | Yes      | Country code: `SL`, `RW`, `GAM`            |
+| after_id      | int    | No       | Last HHID from previous page               |
+| created_since | string | No       | Fetch records created after this timestamp |
+| limit         | int    | No       | Max rows to return (default 500)           |
 
 **Example Request:**
 
 ```bash
 curl -X GET \
-  'https://insight.delagua.org/wp-json/vendor-api/v1/beneficiaries?country=SL&after_id=0&limit=100' \
+  'https://insight.delagua.org/wp-json/vendor-api/v1/beneficiaries?country=SL&after_id=0&created_since=2026-01-20%2012:00:00&limit=100' \
   -H 'X-API-Key: your_api_key_here'
 ```
 
@@ -192,6 +214,12 @@ curl -X GET \
 
 ```json
 {
+  "meta": {
+    "count": 1,
+    "has_more": true,
+    "last_timestamp": "2026-01-20 12:20:00",
+    "last_cursor": 1001
+  },
   "data": [
     {
       "HHID": 1001,
@@ -210,11 +238,10 @@ curl -X GET \
       "Village": "Sample Village",
       "WorkRegionGID": 1234,
       "CountryID": 18022,
-      "ProjectID": 3699
+      "ProjectID": 3699,
+      "Timestamp": "2025-01-24 09:31:01"
     }
-  ],
-  "next_cursor": 5555,
-  "has_more": true
+  ]
 }
 ```
 
@@ -239,9 +266,9 @@ curl -X GET \
 
 ## General Notes
 
-1. All endpoints are **read-only**.
+1. All endpoints are read-only.
 2. Large datasets are paginated via `after_id` and `limit`.
-3. Responses include `next_cursor` and `has_more` for easy paging.
-4. Ensure `X-API-Key` header is included in every request.
-5. JSON structure is **consistent across countries**; only unused fields are `null`.
-
+3. `created_since` can be used to fetch only new records since the last sync.
+4. Responses include `meta.last_timestamp` and `meta.last_cursor` for safe incremental syncs.
+5. Ensure `X-API-Key` header is included in every request.
+6. JSON structure is consistent across countries; only unused fields are `null`.
