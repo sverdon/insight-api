@@ -59,11 +59,12 @@ Response metadata:
 
 **Request Parameters:**
 
-| Parameter | Type   | Required | Description                  |
-|-----------|--------|----------|------------------------------|
-| country   | string | Yes      | Country code: `SL`, `RW`, `GAM` |
-| after_id  | int    | No       | Last DAID from previous page |
-| limit     | int    | No       | Max rows to return (default 100) |
+| Parameter     | Type   | Required | Description                                |
+| ------------- | ------ | -------- | ------------------------------------------ |
+| country       | string | Yes      | Country code: `SL`, `RW`, `GAM`            |
+| after_id      | int    | No       | Last DAID from previous page               |
+| created_since | string | No       | Fetch records created after this timestamp |
+| limit         | int    | No       | Max rows to return (default 500)           |
 
 **Example Request:**
 
@@ -264,5 +265,6 @@ curl -X GET \
 4. Responses include `meta.last_timestamp` and `meta.last_cursor` for safe incremental syncs.
 5. Ensure `X-API-Key` header is included in every request.
 6. JSON structure is consistent across countries; only unused fields are `null`.
+
 
 
