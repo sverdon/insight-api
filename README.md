@@ -5,17 +5,15 @@ All requests require an **API key** via the `X-API-Key` header.
 
 ## What’s New
 
-Added support for incremental sync using a new `created_since` parameter on all endpoints (/contacts, /barcodes, /locations/villages, /beneficiaries).
+Added support for **incremental sync** using a new `created_since` parameter on all endpoints (`/contacts`, `/barcodes`, `/locations/villages`, `/beneficiaries`).  
 
-Use `created_since` to fetch only records created after a specific timestamp, avoiding repeated full dataset downloads.
-
-Combined with the existing `after_id` cursor, this ensures safe pagination even when multiple rows share the same timestamp (common due to batch imports).
-
-Responses now include a meta object containing `last_timestamp` and `last_cursor` to simplify resuming syncs.
+- Use `created_since` to fetch **only records created after a specific timestamp**, avoiding repeated full dataset downloads.  
+- Combined with the existing `after_id` cursor, this ensures **safe pagination even when multiple rows share the same timestamp** (common in batch imports).  
+- Responses now include a `meta` object containing `last_timestamp` and `last_cursor` to simplify resuming syncs.  
 
 Example usage:
 
-```
+```bash
 curl -X GET \
   'https://insight.delagua.org/wp-json/vendor-api/v1/contacts?country=SL&created_since=2026-01-20%2012:00:00&after_id=4567&limit=500' \
   -H 'X-API-Key: your_api_key_here'
@@ -272,3 +270,4 @@ curl -X GET \
 4. Responses include `meta.last_timestamp` and `meta.last_cursor` for safe incremental syncs.
 5. Ensure `X-API-Key` header is included in every request.
 6. JSON structure is consistent across countries; only unused fields are `null`.
+
